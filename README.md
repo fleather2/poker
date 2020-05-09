@@ -1,2 +1,2 @@
 # poker
-Quick and Simple Poker Game
+Simple game of Texas Holdem
