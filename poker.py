@@ -109,8 +109,10 @@ leadingbet = BIG_BLIND
 #  add the raising player to it. add all of the subsequent player to it as the turn continues.
 # when the turn is over. add the rest of the players in players[] IN ORDER  WHO ARE NOT ON THE LIST to it
 # if the order has not changed and the leading bet is 0, flip a dealer card
+neworder = []
 for player in players:
-
+    if len(neworder) > 0:
+        neworder.append(player)
     if not player.isfold:
 
         if player == user:
@@ -140,6 +142,7 @@ for player in players:
                     player.bet += leadingbet
                     player.bet += choice
                     leadingbet = choice
+                    neworder = [player]
                 elif choice == 3:
                     print("You Fold")
                     player.fold()
@@ -167,11 +170,17 @@ for player in players:
                 elif choice == 2:
                     player.bet += leadingbet
                     player.bet += 50
+                    neworder = [player]
                     print("Opponent Raises 50")
                 else:
                     player.fold()
                     print("Opponent Folds")
-                
+if len(neworder) > 0:
+    i = 0
+    while len(players) > len(neworder):
+        neworder.append(players[i])
+        i += 1
+
 
 
             
