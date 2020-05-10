@@ -8,7 +8,7 @@ BIG_BLIND = 100
 SMALL_BLIND = 50
 VICTORY = ""
 
-COMBINATIONS = {0: "No Pair", 1: "One Pair", 2: "Two Pairs", 3: "Three of a Kind", 4: "Straight", 5:"Flush", 6: "Full House", 7:"Four of a Kind", 8:"Straight Flush", 10: "Royal Flush", 11: "Five of a Kind"}
+COMBINATIONS = {0: "High Card", 1: "One Pair", 2: "Two Pairs", 3: "Three of a Kind", 4: "Straight", 5:"Flush", 6: "Full House", 7:"Four of a Kind", 8:"Straight Flush", 9: "Royal Flush", 10: "Five of a Kind"}
 
 class card:
     
@@ -92,22 +92,79 @@ class dealer_hand:
         self.cards.append(card)
 
 
+def setscore(oldscore, newscore):
+    if newscore[0] > oldscore[0]:
+        return newscore
+    if newscore[0] < oldscore[0]:
+        return oldscore
+    if newscore[1] > oldscore[1]:
+        return newscore 
+    return oldscore
 
-def calculateHand(dealer, player):
+def calculateHand(dealer, player): #TODO after every condition is checked, modularize
     #Take Value, print hand, return score
-    score = []
+    score = [0, 0]
     allcards = dealer.cards + player.cards
 
     # Check for flushes/straights
     if all(c.suit == allcards[0].suit for c in allcards): # if the suits are the same (flush)
         if all(x.value in [10,11,12,13,14] for x in allcards): # if ace, king, queen, jack, 10 are all in allcards
-            score = [11, 0] #Royal Flush
-        
+             #Royal Flush
+            return setscore(score, [9, 0])
+        else:
+            for card in allcards:
+                cardexclude = [] + allcards #created this way to ensure that cardexclude is a separate list
+                cardexclude.remove(card)
+                if all(x.value in [card.value+1, card.value+2, card.value+3, card.value+4] for x in cardexclude): #checks for straights (and flush)
+                    return setscore(score, [8, card.value])# Straight Flush with the value of the lowest card
+            
+            score = setscore(score, [5, max(x.value for x in allcards)])# Flush with no straight, high card wins TODO check facts here
     
-    #TODO check for straights: royal, straight flush, straight 
-    #TODO check for _ of a kind: 5, 4, 3, 2 pair, pair
-    #TODO check for flush
-    #TODO check for high card
+    for card in allcards:
+        cardexclude = [] + allcards
+        cardexclude.remove(card)
+        if all(x.value in [card.value+1, card.value+2, card.value+3, card.value+4] for x in cardexclude): #checks for straights
+            score = setscore(score, [4, card.value])# Straight with the value of the lowest card
+            
+    
+    #check for card combos, such as full house, _ of a kind, etc
+    combos = []
+    values = []
+    
+    for card in allcards:
+        
+        if len(combos) == 0:
+            combos.append([card])
+
+        else:
+            for x in combos:
+                if card.value == x[0].value:
+                    x.append(card)
+            if all(card not in x for x in combos):
+                combos.append([card])
+            
+    for x in combos:
+        if len(x) == 5:
+            score = setscore(score, [10, x[0].value]) # 5 of a kind (only possible w joker)
+        if len(x) == 4:
+            score = setscore(score, [7, x[0].value]) # 4 of a kind
+        if len(x) == 3:
+            score = setscore(score, [3, x[0].value]) # 3 of a kind
+            for y in combos:
+                if len(y) == 2:
+                    score = setscore(score, [6, x[0].value]) # Full House
+        if len(x) == 2:
+            score = setscore(score, [1, x[0].value]) # Pair
+            for y in combos:
+                if len(y) == 2 and y != x:
+                    score = setscore(score, [2, x[0].value]) # Two Pair
+    
+
+    #check for high card
+    highcard = max(card.value for card in allcards)
+    score = setscore(score, [0, highcard])
+
+    return score
 
 def main():
     gamedeck = deck()
