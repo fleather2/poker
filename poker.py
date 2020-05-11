@@ -185,6 +185,21 @@ def main():
     players[1].bet = BIG_BLIND
 
     leadingbet = BIG_BLIND
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     turn = True # Condition for continuing to another turn. Stops if every player has checked at all 5 decks revealed, or if everyone except one person has folded
     while turn:
         # to deal with order change when raising, if a player raises, make a new list of players called nextorder.
@@ -210,7 +225,6 @@ def main():
                     print("---")
 
                     print("Your Turn")
-
 
                     player.showcards()
                     if players[0] == user:
