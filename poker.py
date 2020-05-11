@@ -1,5 +1,6 @@
 from colorama import Fore, Style
 import random
+import characters
 
 VALUE_STRINGS = {2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9", 10: "10", 11: "Jack", 12: "Queen", 13: "King", 14: "Ace"}
 SUITS = ["Spade", "Club", "Heart", "Diamond"]
@@ -11,7 +12,6 @@ VICTORY = ""
 COMBINATIONS = {0: "High Card", 1: "One Pair", 2: "Two Pairs", 3: "Three of a Kind", 4: "Straight", 5:"Flush", 6: "Full House", 7:"Four of a Kind", 8:"Straight Flush", 9: "Royal Flush", 10: "Five of a Kind"}
 
 class card:
-    
     def __init__(self, suit, value):
         self.suit = suit
         self.value = value
@@ -23,12 +23,9 @@ class card:
         else:
             s[0] = Fore.WHITE
             
-
         s[0] += VALUE_STRINGS[self.value] 
         s[1] = "of " + self.suit + "s" + Style.RESET_ALL
         print('{:>12} {:>12}'.format(s[0], s[1]))
-
-
 
 class deck:
     def __init__(self, shuffle=True):
@@ -92,7 +89,7 @@ class dealer_hand:
         self.cards.append(card)
 
 
-def setscore(oldscore, newscore):
+def setscore(oldscore, newscore): #function for comparing two score arrays. first compares type of hand, then compares different values to help sort out potential ties
     if newscore[0] > oldscore[0]:
         return newscore
     if newscore[0] < oldscore[0]:
@@ -206,7 +203,7 @@ def main():
                     for i in range(dealer.revealed):
                         dealer.cards[i].printcard()
 
-                    print("\nYour bet:", player.bet)
+                    print("\nYour current bet", player.bet)
                     for p in players:
                         if p != user:
                             print("Opponent bet:", p.bet) # TODO modularize, change to names
@@ -217,7 +214,7 @@ def main():
 
                     player.showcards()
                     if players[0] == user:
-                        print("Betting it at you.")
+                        print("Betting is at you.")
                         choice = int(input("1 - Check, 2 - Bet, 3- Fold\n\t"))
                         if choice == 1:
                             pass
@@ -314,6 +311,7 @@ def main():
 
 
     if victory == "All Check":
+        print("Showdown")
         #determine winner
         competing = []
         for p in players:
@@ -322,8 +320,38 @@ def main():
         
         for p in competing:
             p.score = calculateHand(dealer, p)
+            print(p.score)
 
-        # take greatest value of all players' scores
+        # TODO simplify
+        besthand = 0
+        for p in competing:
+            if p.score[0] > besthand:
+                besthand = p.score[0]
+        print("Best first score: ", besthand)
+        finalists = []
+        for p in competing:
+            if p.score[0] == besthand:
+                finalists.append(p)
+        winner = player_hand()
+        besthand = 0
+        for p in finalists:
+            if p.score[1] > besthand:
+                winner = p
+                besthand = p.score[1]
+
+        print("---WINNING HAND---")
+        winner.showcards()
+        pot = 0
+        for p in players:
+            pot += p.bet
+        if winner==user:
+
+            print("Coagulations. You win the pot of", pot)
+        else:
+            
+            print("You lose")
+
+            
             
 
 

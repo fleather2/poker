@@ -1,6 +1,6 @@
 from poker import *
 card0 = card("Heart", 10)
-card1 = card("Diamond", 10)
+card1 = card("Diamond", 11)
 card2 = card("Heart", 2)
 card3 = card("Spade", 1)
 card4 = card("Club", 3)
@@ -12,5 +12,5 @@ dealer = dealer_hand()
 
 score = []
 score = calculateHand(dealer, player)
-print(score)
+
 print(COMBINATIONS[score[0]])
