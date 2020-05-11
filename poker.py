@@ -1,7 +1,9 @@
+#Imports
 from colorama import Fore, Style
 import random
-import characters
+from characters import *
 
+#Constants
 VALUE_STRINGS = {2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9", 10: "10", 11: "Jack", 12: "Queen", 13: "King", 14: "Ace"}
 SUITS = ["Spade", "Club", "Heart", "Diamond"]
 VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] # 11=Jack 12=Queen 13=King 14=Ace
@@ -11,6 +13,7 @@ VICTORY = ""
 
 COMBINATIONS = {0: "High Card", 1: "One Pair", 2: "Two Pairs", 3: "Three of a Kind", 4: "Straight", 5:"Flush", 6: "Full House", 7:"Four of a Kind", 8:"Straight Flush", 9: "Royal Flush", 10: "Five of a Kind"}
 
+#Classes
 class card:
     def __init__(self, suit, value):
         self.suit = suit
@@ -51,13 +54,15 @@ class deck:
 
 #basic hand, TODO add player with attributes hand, total money, player-controlled
 class player_hand:
-
-    def __init__(self):
+    def __init__(self, char=None):
         self.cards = []
         self.bet = 0
         self.isfold = False
         self.score = 0
-
+        if char == None:
+            char = character()
+        self.char = char
+        
     def givecard(self, card):
         self.cards.append(card)
 
@@ -79,7 +84,6 @@ class player_hand:
     
 #5 cards at the front of the table
 class dealer_hand:
-
     def __init__(self):
         self.cards = []
         self.bet = 0
@@ -88,12 +92,25 @@ class dealer_hand:
     def givecard(self, card):
         self.cards.append(card)
 
-    def showcards(self):
+    def showcards(self, showall=False):
         for i in range(self.revealed):
             self.cards[i].printcard()
+        if showall:
+            for i in range(self.revealed, len(self.cards)):
+                self.cards[i].printcard()
+
+# Game data
+class gamestate:
+    def __init__(self, players, dealer, leadingbet, userfold=False):
+        self.players = players
+        self.dealer = dealer
+        self.leadingbet = leadingbet
+        self.userfold = userfold
 
 
-def setscore(oldscore, newscore): #function for comparing two score arrays. first compares type of hand, then compares different values to help sort out potential ties
+# Functinos
+#function for comparing two score arrays. first compares type of hand, then compares different values to help sort out potential ties
+def setscore(oldscore, newscore): 
     if newscore[0] > oldscore[0]:
         return newscore
     if newscore[0] < oldscore[0]:
@@ -102,8 +119,8 @@ def setscore(oldscore, newscore): #function for comparing two score arrays. firs
         return newscore 
     return oldscore
 
+#Take Value, print hand, return score
 def calculateHand(dealer, player): #TODO after every condition is checked, modularize
-    #Take Value, print hand, return score
     score = [0, 0]
     allcards = dealer.cards + player.cards
 
@@ -127,13 +144,11 @@ def calculateHand(dealer, player): #TODO after every condition is checked, modul
         if all(x.value in [card.value+1, card.value+2, card.value+3, card.value+4] for x in cardexclude): #checks for straights
             score = setscore(score, [4, card.value])# Straight with the value of the lowest card
             
-    
     #check for card combos, such as full house, _ of a kind, etc
     combos = []
     values = []
     
     for card in allcards:
-        
         if len(combos) == 0:
             combos.append([card])
 
@@ -167,15 +182,8 @@ def calculateHand(dealer, player): #TODO after every condition is checked, modul
 
     return score
 
-class gamestate:
-    def __init__(self, players, dealer, leadingbet, userfold=False):
-        self.players = players
-        self.dealer = dealer
-        self.leadingbet = leadingbet
-        self.userfold = userfold
-
+# takes info from game, returns players[] in a different order if the betting is increased, returns new leading bet
 def userturn(user, state): 
-    # takes info from game, returns players[] in a different order if the betting is increased, returns new leading bet
     players = state.players
     dealer = state.dealer
     leadingbet = state.leadingbet
@@ -277,33 +285,33 @@ def userturn(user, state):
     return state
 
 def opponentturn(player, state):
-    
     maxchoice = 2 #2 for never fold, 3 for fold
-    print("--- Opponent Turn ---")
+    name = player.char.name
+    print("--- " + name + "'sTurn ---")
     if state.players[0] == player:
-        print("Betting at Opponent")
+        print("Betting at", name)
         choice = random.randint(1, maxchoice)
         if choice == 1:
-            print("Opponent Checks")
+            print(name, "Checks")
             return state
         elif choice == 2:
-            print("Opponent Bets 50")
+            print(name, "Bets 50")
             state.leadingbet = 50
             player.bet += 50
             return state
         elif choice == 3:
-            print("Opponent Folds")
+            print(name, "Folds")
             player.isfold = True
             return state
     else:
         print("Leading bet is", state.leadingbet)
         choice = random.randint(1,maxchoice)
         if choice == 1:
-            print("Opponent Calls")
+            print(name, "Calls")
             player.bet += state.leadingbet
             return state
         elif choice == 2:
-            print("Opponent Raises")
+            print(name, "Raises")
             state.leadingbet += 50
             player.bet += state.leadingbet
 
@@ -323,7 +331,7 @@ def opponentturn(player, state):
             return state
 
         elif choice == 3:
-            print("Opponent Folds")
+            print(str(player.char.name + " Folds"))
             player.isfold = True
             return state
         
@@ -337,15 +345,17 @@ def main():
     opp = player_hand()
     dealer = dealer_hand()
 
-    for i in range(2):
-        user.givecard(gamedeck.deal())
-        opp.givecard(gamedeck.deal())
-
     for i in range(5):
         dealer.givecard(gamedeck.deal())
 
 
-    players = [user, opp]
+    players = [user]
+    players += generateplayers(4)
+    for p in players:
+        print("Dealing to ", p.char.name)
+        p.givecard(gamedeck.deal())
+        p.givecard(gamedeck.deal())
+
     #assign small and big blinds
     players[0].bet = SMALL_BLIND
     players[1].bet = BIG_BLIND
@@ -355,15 +365,12 @@ def main():
     turn = True # Condition for continuing to another turn. Stops if every player has checked at all 5 decks revealed, or if everyone except one person has folded
     state = gamestate(players, dealer, leadingbet, userfold=False)
     while turn:
-
         for p in players:
-            
-            if p == user:
-                state = userturn(user, state)
-            else:
-                state = opponentturn(p, state)
-            
-        
+            if p.isfold==False:
+                if p == user:
+                    state = userturn(user, state)
+                else:
+                    state = opponentturn(p, state)
         
         if leadingbet == 0:
             #Flip a Dealer Card
@@ -387,6 +394,7 @@ def main():
             victory = "Folds"
 
 
+    print("\nBetting Done\n")
     # Victory condition - everyone but one person folds
     if victory == "Folds":
         winner = player_hand()
@@ -409,14 +417,12 @@ def main():
         
         for p in competing:
             p.score = calculateHand(dealer, p)
-            print(p.score)
 
         # TODO simplify
         besthand = 0
         for p in competing:
             if p.score[0] > besthand:
                 besthand = p.score[0]
-        print("Best first score: ", besthand)
         finalists = []
         for p in competing:
             if p.score[0] == besthand:
@@ -433,16 +439,17 @@ def main():
     for p in players:
         
         if p != winner and p != user:
-            print("Opponent Hand")
+            
+            print(str(p.char.name + "'s Hand"))
             p.showcards()
         if p == user:
             print("Your Hand")
             p.showcards()
 
-    print("---WINNING HAND---")
+    print("--- WINNING HAND:", winner.char.name, "---")
     winner.showcards()
     print("Dealer's Hand")
-    dealer.showcards()
+    dealer.showcards(showall=True)
     pot = 0
     for p in players:
         pot += p.bet
@@ -453,12 +460,6 @@ def main():
         
         print("You lose")
 
-            
-            
-
-
-
-    
 if __name__ == "__main__":
     main()
 
