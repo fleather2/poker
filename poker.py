@@ -88,6 +88,10 @@ class dealer_hand:
     def givecard(self, card):
         self.cards.append(card)
 
+    def showcards(self):
+        for i in range(self.revealed):
+            self.cards[i].printcard()
+
 
 def setscore(oldscore, newscore): #function for comparing two score arrays. first compares type of hand, then compares different values to help sort out potential ties
     if newscore[0] > oldscore[0]:
@@ -163,6 +167,168 @@ def calculateHand(dealer, player): #TODO after every condition is checked, modul
 
     return score
 
+class gamestate:
+    def __init__(self, players, dealer, leadingbet, userfold=False):
+        self.players = players
+        self.dealer = dealer
+        self.leadingbet = leadingbet
+        self.userfold = userfold
+
+def userturn(user, state): 
+    # takes info from game, returns players[] in a different order if the betting is increased, returns new leading bet
+    players = state.players
+    dealer = state.dealer
+    leadingbet = state.leadingbet
+    
+    pot = 0
+    for p in players:
+        pot += p.bet
+    print("--- Your Turn ---")
+    print("Your Current Bet:", user.bet)
+    print("The Pot:", pot)
+    print("Your Hand:")
+    user.showcards()
+    print("Dealer Hand:")
+    dealer.showcards()
+    if players[0] == user:
+        print ("Betting is at you")
+        
+        choice = 0
+        while choice not in [1, 2, 3]:
+            choice = input("You can: 1 - Check, 2 - Bet, 3 - Fold\n\t")
+            try:
+                choice = int(choice)
+                if choice not in [1,2,3]:
+                    raise ValueError("Invalid Choice Input")
+                
+                if choice == 1:
+                    print("You Check")
+                    return state 
+
+                elif choice == 2:
+                    bet = int(input("How much would you like to bet?\n\t"))
+                    leadingbet = bet # TODO check if player has enough money for bet
+                    user.bet += leadingbet
+                    state.leadingbet = bet
+                    return state
+
+                elif choice == 3:
+                    print("You Fold")
+                    state.userfold = True
+                    user.isfold = True
+                    return state
+
+                else:
+                    choice = 0
+            except: 
+                print("INVALID INPUT. Try again")
+                choice = 0
+        
+
+    else:
+        print("Leading bet is", leadingbet)
+        choice = 0
+        while choice not in [1,2,3]:
+            choice = input(str("You can: 1 - Call (bet " + str(leadingbet) + ") 2 - Raise, 3 - Fold\n\t"))
+
+            try:
+                choice = int(choice)
+                if choice not in [1,2,3]:
+                    raise ValueError("Invalid Choice Input")
+                
+                if choice == 1:
+                    print("You Call")
+                    user.bet += leadingbet
+                    return state 
+
+                elif choice == 2:
+                    bet = int(input("How much would you like to raise by?\n\t"))
+                    leadingbet += bet # TODO check if player has enough money for bet
+                    user.bet += leadingbet
+                    state.leadingbet = bet
+
+                    #Change the position of the players
+                    neworder = []
+                    appendrest = False
+                    for p in players:
+                        if p == user:
+                            neworder.append(p)
+                            appendrest = True
+                        elif appendrest == True:
+                            neworder.append(p)
+                    for p in players:
+                        if p not in neworder:
+                            neworder.append(p)
+                    state.players = neworder
+                    return state
+
+                elif choice == 3:
+                    print("You Fold")
+                    state.userfold = True
+                    user.isfold = True
+                    return state
+
+                else:
+                    choice = 0
+            except: 
+                print("INVALID INPUT. Try again")
+                choice = 0
+    
+    return state
+
+def opponentturn(player, state):
+    
+    maxchoice = 2 #2 for never fold, 3 for fold
+    print("--- Opponent Turn ---")
+    if state.players[0] == player:
+        print("Betting at Opponent")
+        choice = random.randint(1, maxchoice)
+        if choice == 1:
+            print("Opponent Checks")
+            return state
+        elif choice == 2:
+            print("Opponent Bets 50")
+            state.leadingbet = 50
+            player.bet += 50
+            return state
+        elif choice == 3:
+            print("Opponent Folds")
+            player.isfold = True
+            return state
+    else:
+        print("Leading bet is", state.leadingbet)
+        choice = random.randint(1,maxchoice)
+        if choice == 1:
+            print("Opponent Calls")
+            player.bet += state.leadingbet
+            return state
+        elif choice == 2:
+            print("Opponent Raises")
+            state.leadingbet += 50
+            player.bet += state.leadingbet
+
+            # Change order of betting for raise
+            neworder = []
+            appendrest = False
+            for p in state.players:
+                if p == player:
+                    neworder.append(p)
+                    appendrest = True
+                elif appendrest == True:
+                    neworder.append(p)
+            for p in state.players:
+                if p not in neworder:
+                    neworder.append(p)
+            state.players = neworder
+            return state
+
+        elif choice == 3:
+            print("Opponent Folds")
+            player.isfold = True
+            return state
+        
+
+
 def main():
     gamedeck = deck()
 
@@ -186,111 +352,20 @@ def main():
 
     leadingbet = BIG_BLIND
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     turn = True # Condition for continuing to another turn. Stops if every player has checked at all 5 decks revealed, or if everyone except one person has folded
+    state = gamestate(players, dealer, leadingbet, userfold=False)
     while turn:
-        # to deal with order change when raising, if a player raises, make a new list of players called nextorder.
-        #  add the raising player to it. add all of the subsequent player to it as the turn continues.
-        # when the turn is over. add the rest of the players in players[] IN ORDER  WHO ARE NOT ON THE LIST to it
-        # if the order has not changed and the leading bet is 0, flip a dealer card
-        neworder = []
-        for player in players:
-            if len(neworder) > 0:
-                neworder.append(player)
-            if not player.isfold:
 
-                if player == user:
-                    
-                    print("---\nCards on the Table: ")
-                    for i in range(dealer.revealed):
-                        dealer.cards[i].printcard()
-
-                    print("\nYour current bet", player.bet)
-                    for p in players:
-                        if p != user:
-                            print("Opponent bet:", p.bet) # TODO modularize, change to names
-                    print("---")
-
-                    print("Your Turn")
-
-                    player.showcards()
-                    if players[0] == user:
-                        print("Betting is at you.")
-                        choice = int(input("1 - Check, 2 - Bet, 3- Fold\n\t"))
-                        if choice == 1:
-                            pass
-                        elif choice == 2:
-                            choice = int(input("How much would you like to bet?\n\t"))
-                            player.bet += choice
-                            leadingbet = choice
-                        elif choice == 3:
-                            print("You Fold")
-                            player.fold()
-                    else:
-                        print("Leading bet is", leadingbet)
-                        choice = int(input("1 - Call, 2 - Raise, 3 - Fold\n\t"))
-                        if choice == 1:
-                            player.bet += leadingbet
-                        elif choice == 2:
-                            choice = input("How much would you like to raise by?\n\t")
-                            player.bet += leadingbet
-                            player.bet += choice
-                            leadingbet = choice
-                            neworder = [player]
-                        elif choice == 3:
-                            print("You Fold")
-                            player.fold()
-                    
-                else: #Player not contolled by user
-                    print("Opponent's Turn")
-                    if players[0] == player:
-                        # can check, bet, or fold
-                        choice = random.randint(1,3)
-                        if choice == 1:
-                            pass
-                            print("Opponent Checks")
-                        elif choice == 2:
-                            player.bet += 50
-                            leadingbet = 50
-                            print("Opponent Bets 50")
-                        else:
-                            print("Opponent Folds")
-                            player.fold()
-                    else:
-                        # can call, raise, or fold
-                        choice = random.randint(1,3)
-                        choice = 1
-                        if choice == 1:
-                            player.bet += leadingbet
-                            print("Opponent Calls")
-                        elif choice == 2:
-                            player.bet += leadingbet
-                            player.bet += 50
-                            neworder = [player]
-                            print("Opponent Raises 50")
-                        else:
-                            player.fold()
-                            print("Opponent Folds")
-        if len(neworder) > 0:
-            i = 0
-            while len(players) > len(neworder):
-                neworder.append(players[i])
-                i += 1
-            players = neworder
-        elif leadingbet == 0:
+        for p in players:
+            
+            if p == user:
+                state = userturn(user, state)
+            else:
+                state = opponentturn(p, state)
+            
+        
+        
+        if leadingbet == 0:
             #Flip a Dealer Card
             if dealer.revealed == 5:
                 # End if all dealer cards are showing and everyone has checked
@@ -353,17 +428,30 @@ def main():
                 winner = p
                 besthand = p.score[1]
 
-        print("---WINNING HAND---")
-        winner.showcards()
-        pot = 0
-        for p in players:
-            pot += p.bet
-        if winner==user:
+    # For Both Win Conditions
 
-            print("Coagulations. You win the pot of", pot)
-        else:
-            
-            print("You lose")
+    for p in players:
+        
+        if p != winner and p != user:
+            print("Opponent Hand")
+            p.showcards()
+        if p == user:
+            print("Your Hand")
+            p.showcards()
+
+    print("---WINNING HAND---")
+    winner.showcards()
+    print("Dealer's Hand")
+    dealer.showcards()
+    pot = 0
+    for p in players:
+        pot += p.bet
+    if winner==user:
+
+        print("Coagulations. You win the pot of", pot)
+    else:
+        
+        print("You lose")
 
             
             
