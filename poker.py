@@ -287,7 +287,7 @@ def userturn(user, state):
 def opponentturn(player, state):
     maxchoice = 2 #2 for never fold, 3 for fold
     name = player.char.name
-    print("--- " + name + "'sTurn ---")
+    print("--- " + name + "'s Turn ---")
     if state.players[0] == player:
         print("Betting at", name)
         choice = random.randint(1, maxchoice)
@@ -350,17 +350,17 @@ def main():
 
 
     players = [user]
-    players += generateplayers(4)
+    players += generateplayers(2)
     for p in players:
-        print("Dealing to ", p.char.name)
+        print("Dealing to", p.char.name)
         p.givecard(gamedeck.deal())
         p.givecard(gamedeck.deal())
 
     #assign small and big blinds
     players[0].bet = SMALL_BLIND
     players[1].bet = BIG_BLIND
-
-    leadingbet = BIG_BLIND
+    
+    leadingbet = 0
     
     turn = True # Condition for continuing to another turn. Stops if every player has checked at all 5 decks revealed, or if everyone except one person has folded
     state = gamestate(players, dealer, leadingbet, userfold=False)
